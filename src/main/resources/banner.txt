@@ -1,0 +1,6 @@
+${AnsiColor.BRIGHT_GREEN}
+项目启动后请访问：http://localhost:9999/page/end/login.html
+
+账号：admin   密码：admin
+
+

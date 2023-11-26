@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta HTTP-EQUIV="pragma" CONTENT="no-cache">
+    <meta HTTP-EQUIV="Cache-Control" CONTENT="no-cache, must-revalidate">
+    <meta HTTP-EQUIV="expires" CONTENT="0">
+    <title>留言管理</title>
+    <link rel="stylesheet" href="../../css/element.css">
+    <link rel="stylesheet" href="../../css/base.css">
+</head>
+<body>
+<div id="wrapper" v-cloak>
+    <el-container>
+        <el-aside :width="isCollapse ? '64px' : '200px'" style="background-color: black; transition:width .5s">
+            <div style="background-color: black; height: 60px; line-height: 60px; text-align: center;
+                color: white; font-size: 20px;">
+                <transition name="el-fade-in-linear">
+                    <span name="fade" v-show="!isCollapse"><a href="/page/end/index.html">X-admin</a></span>
+                </transition>
+            </div>
+            <el-menu :default-openeds="['1']" style="border: none;" background-color="black" text-color="#fff"
+                     active-text-color="#ffd04b"
+                     default-active="message"
+                     class="el-menu-vertical-demo" :collapse="isCollapse">
+                <a href="/page/end/index.html">
+                    <el-menu-item index="home">
+                        <i class="el-icon-data-line"></i>
+                        <span slot="title">首页</span>
+                    </el-menu-item>
+                </a>
+                <el-submenu index="1" v-if="user.permission && user.permission.length > 0">
+                    <template slot="title">
+                        <i class="el-icon-menu"></i>
+                        <span slot="title">信息管理</span>
+                    </template>
+                    <a :href="item.path" v-for="item in user.permission" :key="item.id">
+                        <el-menu-item :index="item.flag">
+                            <i class="el-icon-s-data"></i>
+                            <span slot="title">{{item.name}}</span>
+                        </el-menu-item>
+                    </a>
+                </el-submenu>
+            </el-menu>
+        </el-aside>
+        <el-container>
+            <el-header style="background-color: black; line-height: 60px; color: white;">
+                <el-row>
+                    <el-col :span="1">
+                        <i style="font-size: 22px; cursor: pointer"
+                           :class="[isCollapse ? 'el-icon-s-unfold' : 'el-icon-s-fold']" @click="handleCollapse"></i>
+                    </el-col>
+                    <el-col :span="2" :offset="21" style="text-align: right">
+                        <span style="color: white; margin-right: 10px">{{user.username}}</span>
+                        <el-dropdown>
+                            <img :src=`/files/${user.avatar}`
+                                 style="width: 40px; height: 40px; margin-right: 10px; border-radius: 50%">
+                            <el-dropdown-menu slot="dropdown">
+                                <a href="/page/end/person.html"
+                                   style="display:inline-block; padding: 5px 0; width: 100px; text-align: center; color: black">个人信息</a>
+                                <a @click="logout" href="#"
+                                   style="display:block; width: 100px;  text-align: center; color: black">退出</a>
+                            </el-dropdown-menu>
+                        </el-dropdown>
+                    </el-col>
+                </el-row>
+            </el-header>
+            <!-- 主体区域 -->
+            <el-main>
+                <el-card style="margin-top: 20px; margin-bottom: 50px">
+                    <div style="display: flex">
+                        <div style="color: #888; font-size: 20px; flex: 1">在线留言</div>
+                    </div>
+                    <!--                    分割线-->
+                    <div style="height: 1px; margin: 10px 0; background-color: #ccc"></div>
+
+                    <div style="padding: 20px; color: #888">
+                        <div>
+                            <el-input type="textarea" :rows="3" v-model="entity.content"></el-input>
+                            <div style="text-align: right; padding: 10px"><el-button type="primary" @click="save">留言</el-button></div>
+                        </div>
+                    </div>
+
+                    <!--                    分割线-->
+                    <div style="height: 1px; margin: 10px 0; background-color: #ccc"></div>
+
+                    <div style="display: flex; padding: 20px" v-for="item in messages">
+                        <div style="text-align: center; flex: 1">
+                            <el-image :src="item.avatar" style="width: 60px; height: 60px; border-radius: 50%"></el-image>
+                        </div>
+                        <div style="padding: 0 10px; flex: 5">
+                            <div><b style="font-size: 14px">{{ item.username }}</b></div>
+                            <div style="padding: 10px 0; color: #888">
+                                {{ item.content }}
+                                <el-button type="text" size="mini" @click="del(item.id)" v-if="item.username === user.username">删除</el-button>
+                            </div>
+                            <div style="background-color: #eee; padding: 10px" v-if="item.parentMessage">{{ item.username }}：{{ item.parentMessage.content }}</div>
+                            <div style="color: #888; font-size: 12px">
+                                <span>{{ item.time  }}</span>
+                                <el-button type="text" style="margin-left: 20px" @click="reReply(item.id)">回复</el-button>
+                            </div>
+                        </div>
+
+                    </div>
+                </el-card>
+
+                <el-dialog title="回复信息" :visible.sync="dialogFormVisible" width="30%"
+                           close-on-click-modal="false" close-on-press-escape="false" show-close="false">
+                    <el-form :model="entity">
+                        <el-form-item label="内容" label-width="100px">
+                            <el-input v-model="entity.reply" autocomplete="off" type="textarea" :rows="3"></el-input>
+                        </el-form-item>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="cancel">取 消</el-button>
+                        <el-button type="primary" @click="reply">确 定</el-button>
+                    </div>
+                </el-dialog>
+
+            </el-main>
+        </el-container>
+    </el-container>
+</div>
+
+<script src="../../js/jquery.min.js"></script>
+<script src="../../js/vue.min.js"></script>
+<script src="../../js/element.js"></script>
+<script src="../../js/tinymce/tinymce.min.js"></script>
+
+
+<script>
+
+    new Vue({
+        el: "#wrapper",
+        data: {
+            user: {},
+            messages: [],
+            dialogFormVisible: false,
+            isCollapse: false,
+            entity: {}
+        },
+        created() {
+            this.user = sessionStorage.getItem("user") ? JSON.parse(sessionStorage.getItem("user")) : {};
+            this.loadMessage();
+
+
+        },
+        methods: {
+            handleCollapse() {
+                this.isCollapse = !this.isCollapse;
+            },
+            logout() {
+                $.get("/api/user/logout");
+                sessionStorage.removeItem("user");
+                location.href = "/page/end/login.html";
+            },
+
+            loadMessage() {
+                $.get("/api/message/foreign/").then(res => {
+                    this.messages = res.data;
+                })
+            },
+            cancel() {
+                this.dialogFormVisible = false;
+                this.entity = {};
+            },
+            reReply(id) {
+                this.dialogFormVisible = true;
+                this.entity.parentId = id;
+            },
+            reply() {
+                this.entity.content = this.entity.reply;
+                this.save();
+            },
+
+            save() {
+                if (!this.user.username) {
+                    this.$message({
+                        message: "请登录",
+                        type: "warning"
+                    });
+                    return;
+                }
+                if (!this.entity.content) {
+                    this.$message({
+                        message: "请填写内容",
+                        type: "warning"
+                    });
+                    return;
+                }
+                $.ajax({
+                    url: "/api/message",
+                    type: 'POST',
+                    contentType: "application/json",
+                    data: JSON.stringify(this.entity)
+                }).then(res => {
+                    if (res.code === '0') {
+                        this.$message({
+                            message: "评论成功",
+                            type: "success"
+                        });
+                    } else {
+                        this.$message({
+                            message: res.msg,
+                            type: "error"
+                        });
+                    }
+                    this.entity = {}
+                    this.loadMessage();
+                    this.dialogFormVisible = false;
+                })
+            },
+            del(id) {
+                $.ajax({
+                    url: "/api/message/" + id,
+                    type: 'DELETE',
+                    contentType: "application/json"
+                }).then(res => {
+                    this.loadMessage()
+                })
+            }
+        }
+    })
+</script>
+</body>
+</html>
